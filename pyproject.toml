@@ -1,0 +1,14 @@
+[project]
+name = "university-result-automator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "flet<1.0",
+    "flet-charts>=0.86.5",
+    "openpyxl>=3.1.5",
+    "requests>=2.34.2",
+    "tqdm>=4.70.1",
+]

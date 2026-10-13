@@ -1,0 +1,111 @@
+import os
+
+from config import SEMESTER_EXAM_CODES
+from result_fetcher import ResultFetcher
+from result_parser import ResultParser
+from excel_generator import ExcelGenerator
+
+class UniversityResultAutomator:
+
+    def __init__(self):
+        self.register_number = None
+        self.semester = None
+        self.exam_code = None
+        self.response = None
+        self.student = None
+        self.subjects = None
+
+    # Get user input for register number and semester
+    def get_user_input(self):
+        self.register_number = input("Enter your Register Number: ")
+        self.semester = int(input("Enter your Semester (1-8): "))
+
+        if self.semester not in SEMESTER_EXAM_CODES:
+            print("Invalid semester. Please enter a number between 1 and 8.")
+            return False
+
+        self.exam_code = SEMESTER_EXAM_CODES[self.semester]
+        return True
+
+    # Fetch result from university
+    def fetch_result(self):
+        print(f"Fetching result for Register Number: {self.register_number}, Semester: {self.semester}...")
+        fetcher = ResultFetcher(self.register_number, self.exam_code)
+        self.response = fetcher.fetch_result()
+
+        if not self.response:
+            print("Failed to fetch result. Please check your internet connection or try again later.")
+            return False
+        if self.response.get("error_code") == -1:
+            message = self.response.get("data",{}).get("html","Result not available.")
+            print(f"Error: {message}")
+            return False
+        return True
+
+    # Parse the fetched result
+    def parse_result(self):
+        html = self.response["data"]["html"]
+        parser = ResultParser(html)
+        self.student = parser.parse_student_info()
+        self.subjects = parser.parse_subjects()
+
+        if self.student is None:
+            print("Failed to parse student information.")
+            return False
+        if not self.subjects:
+            print("Failed to parse subjects information.")
+            return False
+        return True
+
+    # Display the parsed result
+    def display_result(self):
+        print("\nSTUDENT DETAILS")
+        print("----------------")
+        print(self.student)
+
+        print("\nSUBJECT RESULTS")
+        print("----------------")
+
+        for subject in self.subjects:
+            print(
+                subject["subject_name"],
+                "->",
+                subject["grade"],
+                "->",
+                subject["credit"],
+                "->",
+                subject["grade_point"],
+                "->",
+                subject["credit_point"]
+            )
+
+    # Generate Excel file for the result
+    def generate_excel(self):
+        os.makedirs("output", exist_ok=True)
+        file_name = f"output/{self.register_number}_semester_{self.semester}_result.xlsx"
+        excel_generator = ExcelGenerator(file_name)
+        excel_generator.create_excel(self.student, self.subjects, self.semester)
+
+        print("\nExcel saved successfully at:", file_name)
+
+    # Run the entire process
+    def run(self):
+        if not self.get_user_input():
+            return
+
+        if not self.fetch_result():
+            return
+
+        if not self.parse_result():
+            return
+
+        self.display_result()
+        self.generate_excel()
+
+        print("\nProcess completed successfully!")
+
+
+# start application
+if __name__ == "__main__":
+    automator = UniversityResultAutomator()
+    automator.run()
